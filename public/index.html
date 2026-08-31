@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoundGame</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="joinScreen" class="screen">
+  <h1>🎤 SoundGame</h1>
+  <p>Reproduis le son joué avec ton micro et obtiens le meilleur % possible !</p>
+  <input id="nameInput" type="text" placeholder="Ton pseudo" maxlength="24" />
+  <button id="joinBtn">Rejoindre la partie</button>
+  <div id="joinStatus" class="status"></div>
+</div>
+
+<div id="gameScreen" class="screen" style="display:none">
+  <header>
+    <div class="players">
+      <div class="player-badge" id="me">Moi</div>
+      <div class="vs">VS</div>
+      <div class="player-badge" id="opponent">Adversaire</div>
+    </div>
+    <div class="scores">
+      <span id="score1">0</span> — <span id="score2">0</span>
+    </div>
+  </header>
+
+  <main>
+    <section id="roundInfo" class="card">
+      <div id="waitingMsg">En attente d'un second joueur...</div>
+
+      <div id="turnContent" style="display:none">
+        <div class="round-header">
+          Round <span id="roundNumber">-</span> (tour <span id="turnNumber">-</span>/<span id="totalTurns">-</span>) —
+          Son à reproduire : <strong id="soundName">-</strong>
+        </div>
+        <div class="round-header" id="performerLabel"></div>
+
+        <audio id="originalAudio" controls></audio>
+
+        <div id="performerControls" style="display:none">
+          <button id="recordBtn">🎙️ Enregistrer</button>
+          <button id="stopBtn" disabled>⏹ Stop</button>
+          <button id="submitBtn" disabled>Envoyer ma tentative</button>
+          <div id="recStatus" class="status"></div>
+          <audio id="myRecording" controls style="display:none"></audio>
+          <div id="timeLeft" class="status"></div>
+        </div>
+
+        <div id="spectatorMsg" class="status" style="display:none">
+          En attente que l'adversaire enregistre sa tentative...
+        </div>
+      </div>
+
+      <div id="summaryContent" style="display:none">
+        <div class="round-header">
+          Résultats de la manche <span id="summaryRoundNumber">-</span> —
+          Son : <strong id="summarySoundName">-</strong>
+        </div>
+
+        <div class="attempts-grid">
+          <div class="attempt-box">
+            <h3 id="attempt1Name">Joueur 1</h3>
+            <div class="result-score small" id="attempt1Percent">--%</div>
+            <div class="result-grade small" id="attempt1Grade">-</div>
+            <audio id="attempt1Audio" controls></audio>
+            <div id="attempt1NoAudio" class="status" style="display:none">Pas de tentative enregistrée (temps écoulé).</div>
+          </div>
+          <div class="attempt-box">
+            <h3 id="attempt2Name">Joueur 2</h3>
+            <div class="result-score small" id="attempt2Percent">--%</div>
+            <div class="result-grade small" id="attempt2Grade">-</div>
+            <audio id="attempt2Audio" controls></audio>
+            <div id="attempt2NoAudio" class="status" style="display:none">Pas de tentative enregistrée (temps écoulé).</div>
+          </div>
+        </div>
+
+        <button id="nextRoundBtn">✅ J'ai écouté les deux tentatives — Manche suivante</button>
+        <div id="readyStatus" class="status"></div>
+      </div>
+    </section>
+
+    <section class="card chat-card">
+      <h2>💬 Tchat</h2>
+      <div id="chatLog"></div>
+      <div class="chat-input">
+        <input id="chatInput" type="text" placeholder="Message..." maxlength="500" />
+        <button id="chatSendBtn">Envoyer</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="client.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #10131a;
+  color: #eee;
+  margin: 0;
+  padding: 16px;
+}
+
+.screen {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+h1 { text-align: center; }
+
+#joinScreen {
+  text-align: center;
+  margin-top: 60px;
+}
+
+input[type="text"] {
+  font-size: 1rem;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #1b1f2a;
+  color: #eee;
+  width: 100%;
+  max-width: 300px;
+  margin: 10px 0;
+}
+
+button {
+  font-size: 0.95rem;
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2a3040;
+  color: #eee;
+  cursor: pointer;
+  margin: 4px 4px 4px 0;
+}
+button:hover:not(:disabled) { background: #38405a; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.recording { background: #6a2b2b; border-color: #b55; }
+
+.status { font-size: 0.85rem; color: #9aa; margin-top: 6px; min-height: 1.2em; }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.players { display: flex; align-items: center; gap: 10px; }
+.player-badge {
+  background: #1b1f2a;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+.vs { color: #888; }
+
+.scores { font-size: 1.3rem; font-weight: bold; }
+
+.card {
+  background: #171b26;
+  border: 1px solid #2a2f3d;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.round-header { margin-bottom: 10px; }
+
+audio { width: 100%; margin: 10px 0; }
+
+.result-score {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+}
+.result-grade {
+  font-size: 1.5rem;
+  text-align: center;
+  color: #ffd54f;
+  margin-bottom: 6px;
+}
+
+.attempts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.attempt-box {
+  background: #12151d;
+  border: 1px solid #2a2f3d;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.attempt-box h3 { margin: 0 0 6px; font-size: 1rem; }
+.result-score.small { font-size: 1.8rem; }
+.result-grade.small { font-size: 1.1rem; }
+
+#nextRoundBtn { width: 100%; font-size: 1.05rem; padding: 12px; }
+
+.chat-card { max-height: 320px; display: flex; flex-direction: column; }
+#chatLog {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 140px;
+  max-height: 200px;
+  border: 1px solid #2a2f3d;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+#chatLog div { margin-bottom: 4px; }
+#chatLog .from { color: #7fb3ff; font-weight: bold; }
+#chatLog .system { color: #888; font-style: italic; }
+
+.chat-input { display: flex; gap: 6px; }
+.chat-input input { flex: 1; margin: 0; max-width: none; }

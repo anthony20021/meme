@@ -1,0 +1,11 @@
+node_modules/
+
+# certificats TLS auto-signés (générés localement via npm run gen-cert)
+cert.pem
+key.pem
+
+# logs
+*.log
+npm-debug.log*
+
+.DS_Store
