@@ -6,8 +6,6 @@ const { WebSocketServer } = require('ws');
 const DATA_DIR = path.join(__dirname, 'data');
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac', '.webm']);
 
-const ROUND_TIMEOUT_MS = 20000; // temps laissé au joueur actif pour reproduire le son
-
 // ---- Barème points / grade ----
 function scoreForPercent(percent) {
   if (percent < 20) return { points: 0, grade: 'D' };
@@ -24,8 +22,8 @@ function listSoundFiles() {
     .filter((f) => AUDIO_EXTENSIONS.has(path.extname(f).toLowerCase()));
 }
 
-function pickRandomSound() {
-  const files = listSoundFiles();
+function pickRandomSound(excludeSet) {
+  const files = listSoundFiles().filter((f) => !excludeSet.has(f));
   if (files.length === 0) return null;
   return files[Math.floor(Math.random() * files.length)];
 }
@@ -61,16 +59,21 @@ httpServer.listen(PORT, '0.0.0.0', () => {
 });
 
 // ---- État de la partie (une seule salle, 2 joueurs) ----
-// Chaque manche : les DEUX joueurs, chacun leur tour, reproduisent le MEME son.
-// Une fois les deux tentatives faites, les deux enregistrements + résultats sont
+// Chaque manche : les DEUX joueurs enregistrent leur tentative sur LE MEME son,
+// en même temps, chacun à son rythme (pas de tour imposé, pas de minuteur).
+// Une fois les deux tentatives reçues, les deux enregistrements + résultats sont
 // révélés aux deux joueurs, qui doivent chacun cliquer "Manche suivante" pour continuer.
+// Un même son n'est jamais rejoué deux fois au cours d'une partie : la partie se
+// termine automatiquement quand tous les sons disponibles ont été utilisés.
 const wss = new WebSocketServer({ server: httpServer, maxPayload: 20 * 1024 * 1024 });
 
 const room = {
   players: {}, // slot(1|2) -> { ws, name }
-  round: null, // { number, filename, turnOrder:[slotA,slotB], turnIndex, attempts:{}, timeout, awaitingReady, readySlots:Set }
+  round: null, // { number, filename, attempts:{}, awaitingReady, readySlots:Set }
   roundNumber: 0,
   scores: { 1: 0, 2: 0 },
+  usedFilenames: new Set(),
+  totalSounds: 0,
 };
 
 function send(ws, msg) {
@@ -99,58 +102,50 @@ function bothConnected() {
 }
 
 function resetGame() {
-  if (room.round && room.round.timeout) clearTimeout(room.round.timeout);
   room.round = null;
   room.roundNumber = 0;
   room.scores = { 1: 0, 2: 0 };
+  room.usedFilenames = new Set();
+  room.totalSounds = 0;
 }
 
-function startRound(startingSlot) {
-  const filename = pickRandomSound();
+function startRound() {
+  if (room.roundNumber === 0) {
+    room.totalSounds = listSoundFiles().length;
+  }
+
+  const filename = pickRandomSound(room.usedFilenames);
   if (!filename) {
-    broadcast({ type: 'error', message: "Aucun son trouvé dans le dossier data/." });
+    broadcast({
+      type: 'game-over',
+      scores: room.scores,
+      roundsPlayed: room.roundNumber,
+    });
+    room.round = null;
     return;
   }
 
+  room.usedFilenames.add(filename);
   room.roundNumber += 1;
   room.round = {
     number: room.roundNumber,
     filename,
-    turnOrder: [startingSlot, otherSlot(startingSlot)],
-    turnIndex: 0,
     attempts: {},
-    timeout: null,
     awaitingReady: false,
     readySlots: new Set(),
   };
 
-  startTurn();
-}
-
-function startTurn() {
-  const r = room.round;
-  const activeSlot = r.turnOrder[r.turnIndex];
-
-  r.timeout = setTimeout(() => {
-    handleAttempt(activeSlot, 0, null, null);
-  }, ROUND_TIMEOUT_MS);
-
   broadcast({
-    type: 'turn-start',
-    round: r.number,
-    filename: r.filename,
-    activeSlot,
-    activeName: room.players[activeSlot]?.name,
-    turnNumber: r.turnIndex + 1,
-    totalTurns: r.turnOrder.length,
-    timeLimitMs: ROUND_TIMEOUT_MS,
+    type: 'round-start',
+    round: room.roundNumber,
+    totalRounds: room.totalSounds,
+    filename,
   });
 }
 
 function handleAttempt(slot, percent, audioData, mimeType) {
   const r = room.round;
-  if (!r) return;
-  clearTimeout(r.timeout);
+  if (!r || r.awaitingReady || r.attempts[slot]) return;
 
   const clamped = Math.max(0, Math.min(100, percent));
   const { points, grade } = scoreForPercent(clamped);
@@ -166,19 +161,14 @@ function handleAttempt(slot, percent, audioData, mimeType) {
   r.attempts[slot] = attempt;
 
   broadcast({
-    type: 'turn-result',
+    type: 'attempt-submitted',
     round: r.number,
     slot,
     name: room.players[slot]?.name,
-    ...attempt,
-    scores: room.scores,
   });
 
-  r.turnIndex += 1;
-
-  if (r.turnIndex < r.turnOrder.length) {
-    startTurn();
-  } else {
+  const bothDone = r.attempts[1] && r.attempts[2];
+  if (bothDone) {
     r.awaitingReady = true;
     broadcast({
       type: 'round-summary',
@@ -201,9 +191,8 @@ function handleReadyNextRound(slot) {
   });
 
   if (r.readySlots.size >= 2) {
-    const nextStart = otherSlot(r.turnOrder[0]);
     room.round = null;
-    if (bothConnected()) startRound(nextStart);
+    if (bothConnected()) startRound();
   }
 }
 
@@ -242,7 +231,7 @@ wss.on('connection', (ws) => {
 
       if (bothConnected() && !room.round) {
         broadcast({ type: 'info', message: 'Les deux joueurs sont connectés, la partie commence !' });
-        startRound(1);
+        startRound();
       } else if (!bothConnected()) {
         send(ws, { type: 'waiting-for-players' });
       }
@@ -259,9 +248,6 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'submit-result') {
-      if (!room.round || room.round.awaitingReady) return;
-      const activeSlot = room.round.turnOrder[room.round.turnIndex];
-      if (activeSlot !== mySlot) return;
       const percent = Number(msg.percent);
       if (Number.isNaN(percent)) return;
       handleAttempt(mySlot, percent, msg.audioData || null, msg.mimeType || null);

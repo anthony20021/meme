@@ -34,25 +34,28 @@
 
       <div id="turnContent" style="display:none">
         <div class="round-header">
-          Round <span id="roundNumber">-</span> (tour <span id="turnNumber">-</span>/<span id="totalTurns">-</span>) —
+          Manche <span id="roundNumber">-</span>/<span id="totalRounds">-</span> —
           Son à reproduire : <strong id="soundName">-</strong>
         </div>
-        <div class="round-header" id="performerLabel"></div>
+        <div class="round-header">🎤 Enregistre ta tentative quand tu es prêt.</div>
 
         <audio id="originalAudio" controls></audio>
 
-        <div id="performerControls" style="display:none">
+        <div id="performerControls">
           <button id="recordBtn">🎙️ Enregistrer</button>
           <button id="stopBtn" disabled>⏹ Stop</button>
           <button id="submitBtn" disabled>Envoyer ma tentative</button>
           <div id="recStatus" class="status"></div>
           <audio id="myRecording" controls style="display:none"></audio>
-          <div id="timeLeft" class="status"></div>
         </div>
 
-        <div id="spectatorMsg" class="status" style="display:none">
-          En attente que l'adversaire enregistre sa tentative...
-        </div>
+        <div id="opponentStatus" class="status"></div>
+      </div>
+
+      <div id="gameOverContent" class="card" style="display:none">
+        <h2>🏁 Partie terminée</h2>
+        <p>Tous les sons disponibles ont été joués (<span id="gameOverRounds">-</span> manches).</p>
+        <div class="result-score" id="finalScore">-</div>
       </div>
 
       <div id="summaryContent" style="display:none">

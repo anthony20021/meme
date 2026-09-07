@@ -16,26 +16,26 @@ const score2El = $('score2');
 const waitingMsg = $('waitingMsg');
 const turnContent = $('turnContent');
 const roundNumberEl = $('roundNumber');
-const turnNumberEl = $('turnNumber');
-const totalTurnsEl = $('totalTurns');
+const totalRoundsEl = $('totalRounds');
 const soundNameEl = $('soundName');
-const performerLabel = $('performerLabel');
 const originalAudio = $('originalAudio');
 
-const performerControls = $('performerControls');
-const spectatorMsg = $('spectatorMsg');
 const recordBtn = $('recordBtn');
 const stopBtn = $('stopBtn');
 const submitBtn = $('submitBtn');
 const recStatus = $('recStatus');
 const myRecording = $('myRecording');
-const timeLeftEl = $('timeLeft');
+const opponentStatus = $('opponentStatus');
 
 const summaryContent = $('summaryContent');
 const summaryRoundNumber = $('summaryRoundNumber');
 const summarySoundName = $('summarySoundName');
 const nextRoundBtn = $('nextRoundBtn');
 const readyStatus = $('readyStatus');
+
+const gameOverContent = $('gameOverContent');
+const gameOverRounds = $('gameOverRounds');
+const finalScore = $('finalScore');
 
 const chatLog = $('chatLog');
 const chatInput = $('chatInput');
@@ -49,7 +49,7 @@ let recordedBlob = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let stream = null;
-let countdownTimer = null;
+let iSubmittedThisRound = false;
 
 function wsUrl() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -116,12 +116,14 @@ function handleMessage(msg) {
       waitingMsg.textContent = "L'adversaire s'est déconnecté. En attente d'un nouveau joueur...";
       turnContent.style.display = 'none';
       summaryContent.style.display = 'none';
+      gameOverContent.style.display = 'none';
       break;
 
     case 'waiting-for-players':
       waitingMsg.style.display = 'block';
       turnContent.style.display = 'none';
       summaryContent.style.display = 'none';
+      gameOverContent.style.display = 'none';
       break;
 
     case 'info':
@@ -132,12 +134,12 @@ function handleMessage(msg) {
       addChatLine(`<span class="system">⚠️ ${escapeHtml(msg.message)}</span>`);
       break;
 
-    case 'turn-start':
-      onTurnStart(msg);
+    case 'round-start':
+      onRoundStart(msg);
       break;
 
-    case 'turn-result':
-      updateScores(msg.scores);
+    case 'attempt-submitted':
+      onAttemptSubmitted(msg);
       break;
 
     case 'round-summary':
@@ -146,6 +148,10 @@ function handleMessage(msg) {
 
     case 'ready-status':
       onReadyStatus(msg);
+      break;
+
+    case 'game-over':
+      onGameOver(msg);
       break;
 
     case 'chat':
@@ -161,51 +167,36 @@ function updateScores(scores) {
   score2El.textContent = scores[2] ?? 0;
 }
 
-function onTurnStart(msg) {
+function onRoundStart(msg) {
   waitingMsg.style.display = 'none';
   summaryContent.style.display = 'none';
+  gameOverContent.style.display = 'none';
   turnContent.style.display = 'block';
 
   currentFilename = msg.filename;
   recordedBlob = null;
+  iSubmittedThisRound = false;
   myRecording.style.display = 'none';
   submitBtn.disabled = true;
   recStatus.textContent = '';
+  opponentStatus.textContent = '';
 
   roundNumberEl.textContent = msg.round;
-  turnNumberEl.textContent = msg.turnNumber;
-  totalTurnsEl.textContent = msg.totalTurns;
+  totalRoundsEl.textContent = msg.totalRounds;
   soundNameEl.textContent = msg.filename;
   originalAudio.src = `/data/${encodeURIComponent(msg.filename)}`;
-
-  const isPerformer = msg.activeSlot === mySlot;
-  performerLabel.textContent = isPerformer
-    ? "🎤 C'est à toi de reproduire ce son !"
-    : `🎧 ${msg.activeName} doit reproduire ce son.`;
-
-  performerControls.style.display = isPerformer ? 'block' : 'none';
-  spectatorMsg.style.display = isPerformer ? 'none' : 'block';
 
   recordBtn.disabled = false;
   stopBtn.disabled = true;
   recordBtn.classList.remove('recording');
+}
 
-  clearInterval(countdownTimer);
-  if (isPerformer) {
-    let remaining = Math.floor(msg.timeLimitMs / 1000);
-    timeLeftEl.textContent = `Temps restant : ${remaining}s`;
-    countdownTimer = setInterval(() => {
-      remaining -= 1;
-      timeLeftEl.textContent = remaining > 0 ? `Temps restant : ${remaining}s` : 'Temps écoulé !';
-      if (remaining <= 0) clearInterval(countdownTimer);
-    }, 1000);
-  } else {
-    timeLeftEl.textContent = '';
-  }
+function onAttemptSubmitted(msg) {
+  if (msg.slot === mySlot) return;
+  opponentStatus.textContent = `✅ ${msg.name} a envoyé sa tentative.`;
 }
 
 function onRoundSummary(msg) {
-  clearInterval(countdownTimer);
   turnContent.style.display = 'none';
   summaryContent.style.display = 'block';
 
@@ -260,6 +251,24 @@ function onReadyStatus(msg) {
   readyStatus.textContent = `Toi : ${meReady ? '✅ prêt' : '⏳ en attente'} — Adversaire : ${opponentReady ? '✅ prêt' : '⏳ en attente'}`;
 }
 
+function onGameOver(msg) {
+  turnContent.style.display = 'none';
+  summaryContent.style.display = 'none';
+  gameOverContent.style.display = 'block';
+
+  gameOverRounds.textContent = msg.roundsPlayed;
+  updateScores(msg.scores);
+
+  const s1 = msg.scores[1] ?? 0;
+  const s2 = msg.scores[2] ?? 0;
+  const meScore = mySlot === 1 ? s1 : s2;
+  const oppScore = mySlot === 1 ? s2 : s1;
+
+  if (meScore > oppScore) finalScore.textContent = '🏆 Tu as gagné !';
+  else if (meScore < oppScore) finalScore.textContent = '😢 Tu as perdu.';
+  else finalScore.textContent = '🤝 Égalité !';
+}
+
 nextRoundBtn.addEventListener('click', () => {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: 'ready-next-round' }));
@@ -305,7 +314,8 @@ stopBtn.addEventListener('click', () => {
 });
 
 submitBtn.addEventListener('click', async () => {
-  if (!recordedBlob || !currentFilename) return;
+  if (!recordedBlob || !currentFilename || iSubmittedThisRound) return;
+  iSubmittedThisRound = true;
   submitBtn.disabled = true;
   recordBtn.disabled = true;
   stopBtn.disabled = true;
@@ -320,10 +330,13 @@ submitBtn.addEventListener('click', async () => {
       audioData,
       mimeType: recordedBlob.type || 'audio/webm',
     }));
-    recStatus.textContent = 'Tentative envoyée.';
+    recStatus.textContent = 'Tentative envoyée. En attente du résultat...';
   } catch (err) {
     recStatus.textContent = `Erreur d'analyse : ${err.message}`;
+    iSubmittedThisRound = false;
     submitBtn.disabled = false;
+    recordBtn.disabled = false;
+    stopBtn.disabled = false;
   }
 });
 
