@@ -8,91 +8,176 @@
 </head>
 <body>
 
-<div id="joinScreen" class="screen">
-  <h1>🎤 SoundGame</h1>
-  <p>Reproduis le son joué avec ton micro et obtiens le meilleur % possible !</p>
-  <input id="nameInput" type="text" placeholder="Ton pseudo" maxlength="24" />
-  <button id="joinBtn">Rejoindre la partie</button>
-  <div id="joinStatus" class="status"></div>
+<!-- ============ Ecran d'accueil ============ -->
+<div id="joinScreen" class="screen join-screen">
+  <div class="join-card">
+    <div class="logo">🎤</div>
+    <h1 class="title">Sound<span>Game</span></h1>
+    <p class="tagline">Un son est joué. Reproduis-le à la voix.<br>Le plus fidèle rafle les points.</p>
+
+    <div class="join-form">
+      <input id="nameInput" type="text" placeholder="Ton pseudo" maxlength="24" autocomplete="off">
+      <button id="joinBtn" class="btn btn-primary btn-block">Rejoindre la partie</button>
+    </div>
+    <div id="joinStatus" class="status"></div>
+
+    <ul class="grade-legend">
+      <li><b class="g-S">S</b>20</li>
+      <li><b class="g-A">A</b>10</li>
+      <li><b class="g-B">B</b>7</li>
+      <li><b class="g-C">C</b>5</li>
+      <li><b class="g-D">D</b>3</li>
+      <li><b class="g-E">E</b>1</li>
+      <li><b class="g-F">F</b>0</li>
+    </ul>
+  </div>
 </div>
 
-<div id="gameScreen" class="screen" style="display:none">
-  <header>
-    <div class="players">
-      <div class="player-badge" id="me">Moi</div>
-      <div class="vs">VS</div>
-      <div class="player-badge" id="opponent">Adversaire</div>
+<!-- ============ Jeu ============ -->
+<div id="gameScreen" class="screen game-screen" hidden>
+
+  <header class="topbar">
+    <div class="pchip p1" id="chip1">
+      <span class="pchip-name" id="name1">Joueur 1</span>
+      <span class="pchip-score" id="score1">0</span>
     </div>
-    <div class="scores">
-      <span id="score1">0</span> — <span id="score2">0</span>
+    <div class="round-pill" id="roundPill">—</div>
+    <div class="pchip p2" id="chip2">
+      <span class="pchip-name" id="name2">Joueur 2</span>
+      <span class="pchip-score" id="score2">0</span>
     </div>
   </header>
 
-  <main>
-    <section id="roundInfo" class="card">
-      <div id="waitingMsg">En attente d'un second joueur...</div>
+  <main class="layout">
+    <div class="stage">
 
-      <div id="turnContent" style="display:none">
-        <div class="round-header">
-          Manche <span id="roundNumber">-</span>/<span id="totalRounds">-</span> —
-          Son à reproduire : <strong id="soundName">-</strong>
-        </div>
-        <div class="round-header">🎤 Enregistre ta tentative quand tu es prêt.</div>
+      <!-- Attente -->
+      <section class="card waiting-card" id="waitingCard">
+        <div class="spinner"></div>
+        <p id="waitingMsg">En attente d'un second joueur…</p>
+      </section>
 
-        <audio id="originalAudio" controls></audio>
-
-        <div id="performerControls">
-          <button id="recordBtn">🎙️ Enregistrer</button>
-          <button id="stopBtn" disabled>⏹ Stop</button>
-          <button id="submitBtn" disabled>Envoyer ma tentative</button>
-          <div id="recStatus" class="status"></div>
-          <audio id="myRecording" controls style="display:none"></audio>
+      <!-- Manche en cours -->
+      <section class="card turn-card" id="turnCard" hidden>
+        <div class="card-head">
+          <span class="label">Son à reproduire</span>
+          <h2 class="sound-name" id="soundName">—</h2>
         </div>
 
-        <div id="opponentStatus" class="status"></div>
-      </div>
-
-      <div id="gameOverContent" class="card" style="display:none">
-        <h2>🏁 Partie terminée</h2>
-        <p>Tous les sons disponibles ont été joués (<span id="gameOverRounds">-</span> manches).</p>
-        <div class="result-score" id="finalScore">-</div>
-      </div>
-
-      <div id="summaryContent" style="display:none">
-        <div class="round-header">
-          Résultats de la manche <span id="summaryRoundNumber">-</span> —
-          Son : <strong id="summarySoundName">-</strong>
-        </div>
-
-        <div class="attempts-grid">
-          <div class="attempt-box">
-            <h3 id="attempt1Name">Joueur 1</h3>
-            <div class="result-score small" id="attempt1Percent">--%</div>
-            <div class="result-grade small" id="attempt1Grade">-</div>
-            <audio id="attempt1Audio" controls></audio>
-            <div id="attempt1NoAudio" class="status" style="display:none">Pas de tentative enregistrée (temps écoulé).</div>
+        <div class="player" id="originalPlayer">
+          <button class="player-play" type="button" aria-label="Lecture">
+            <span class="icon-play"></span>
+          </button>
+          <div class="player-body">
+            <div class="player-bar"><div class="player-fill"></div></div>
+            <div class="player-meta">
+              <span class="player-time">0:00</span>
+              <span class="player-tag">original</span>
+              <span class="player-duration">0:00</span>
+            </div>
           </div>
-          <div class="attempt-box">
-            <h3 id="attempt2Name">Joueur 2</h3>
-            <div class="result-score small" id="attempt2Percent">--%</div>
-            <div class="result-grade small" id="attempt2Grade">-</div>
-            <audio id="attempt2Audio" controls></audio>
-            <div id="attempt2NoAudio" class="status" style="display:none">Pas de tentative enregistrée (temps écoulé).</div>
-          </div>
+          <audio preload="metadata"></audio>
         </div>
 
-        <button id="nextRoundBtn">✅ J'ai écouté les deux tentatives — Manche suivante</button>
-        <div id="readyStatus" class="status"></div>
-      </div>
-    </section>
+        <div class="record-zone">
+          <button id="recordBtn" class="btn-record" type="button">
+            <span class="rec-dot"></span>
+            <span class="rec-label">Enregistrer</span>
+          </button>
+          <div class="meter" id="meter" aria-hidden="true"></div>
+        </div>
 
+        <div id="recStatus" class="status"></div>
+
+        <div class="player player-mine" id="myPlayer" hidden>
+          <button class="player-play" type="button" aria-label="Lecture">
+            <span class="icon-play"></span>
+          </button>
+          <div class="player-body">
+            <div class="player-bar"><div class="player-fill"></div></div>
+            <div class="player-meta">
+              <span class="player-time">0:00</span>
+              <span class="player-tag">ta tentative</span>
+              <span class="player-duration">0:00</span>
+            </div>
+          </div>
+          <audio preload="metadata"></audio>
+        </div>
+
+        <button id="submitBtn" class="btn btn-primary btn-block" disabled>Envoyer ma tentative</button>
+        <div id="opponentStatus" class="opponent-status"></div>
+      </section>
+
+      <!-- Résultats de la manche -->
+      <section class="card summary-card" id="summaryCard" hidden>
+        <div class="card-head">
+          <span class="label">Manche <span id="summaryRound">—</span></span>
+          <h2 class="sound-name" id="summarySound">—</h2>
+        </div>
+
+        <div class="attempts">
+          <article class="attempt p1" id="attempt1">
+            <div class="attempt-name" id="attempt1Name">Joueur 1</div>
+            <div class="grade-badge" id="attempt1Grade">–</div>
+            <div class="attempt-percent"><span id="attempt1Percent">–</span><small>%</small></div>
+            <div class="attempt-points" id="attempt1Points"></div>
+            <div class="player player-mini" id="attempt1Player">
+              <button class="player-play" type="button" aria-label="Lecture">
+                <span class="icon-play"></span>
+              </button>
+              <div class="player-body">
+                <div class="player-bar"><div class="player-fill"></div></div>
+              </div>
+              <audio preload="metadata"></audio>
+            </div>
+            <div class="no-audio" id="attempt1NoAudio" hidden>Pas d'enregistrement</div>
+          </article>
+
+          <article class="attempt p2" id="attempt2">
+            <div class="attempt-name" id="attempt2Name">Joueur 2</div>
+            <div class="grade-badge" id="attempt2Grade">–</div>
+            <div class="attempt-percent"><span id="attempt2Percent">–</span><small>%</small></div>
+            <div class="attempt-points" id="attempt2Points"></div>
+            <div class="player player-mini" id="attempt2Player">
+              <button class="player-play" type="button" aria-label="Lecture">
+                <span class="icon-play"></span>
+              </button>
+              <div class="player-body">
+                <div class="player-bar"><div class="player-fill"></div></div>
+              </div>
+              <audio preload="metadata"></audio>
+            </div>
+            <div class="no-audio" id="attempt2NoAudio" hidden>Pas d'enregistrement</div>
+          </article>
+        </div>
+
+        <button id="nextRoundBtn" class="btn btn-primary btn-block">Manche suivante</button>
+        <div id="readyStatus" class="ready-status"></div>
+      </section>
+
+      <!-- Fin de partie -->
+      <section class="card gameover-card" id="gameOverCard" hidden>
+        <div class="gameover-icon" id="gameOverIcon">🏆</div>
+        <h2 class="gameover-title" id="gameOverTitle">Partie terminée</h2>
+        <p class="gameover-sub" id="gameOverSub"></p>
+        <div class="final-scores">
+          <div class="final p1"><span id="final1Name">Joueur 1</span><b id="final1Score">0</b></div>
+          <div class="final p2"><span id="final2Name">Joueur 2</span><b id="final2Score">0</b></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Tchat -->
     <section class="card chat-card">
-      <h2>💬 Tchat</h2>
-      <div id="chatLog"></div>
-      <div class="chat-input">
-        <input id="chatInput" type="text" placeholder="Message..." maxlength="500" />
-        <button id="chatSendBtn">Envoyer</button>
+      <div class="chat-head">
+        <h2>Tchat</h2>
+        <button id="soundToggle" class="btn-icon" type="button" title="Couper les sons">🔊</button>
       </div>
+      <div id="chatLog" class="chat-log"></div>
+      <form class="chat-input" id="chatForm">
+        <input id="chatInput" type="text" placeholder="Écrire un message…" maxlength="500" autocomplete="off">
+        <button class="btn-send" type="submit" aria-label="Envoyer">➤</button>
+      </form>
     </section>
   </main>
 </div>
