@@ -7,12 +7,17 @@ const DATA_DIR = path.join(__dirname, 'data');
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac', '.webm']);
 
 // ---- Barème points / grade ----
+// Seuils calés sur la distribution mesurée : deux sons SANS RAPPORT tombent à
+// 17,6% de médiane et 34% au 95e percentile (voir public/js/audioSimilarity.js).
+// F/E sont donc élargis pour que le hasard atterrisse bien en F.
 function scoreForPercent(percent) {
-  if (percent < 20) return { points: 0, grade: 'D' };
-  if (percent < 40) return { points: 1, grade: 'C' };
-  if (percent < 60) return { points: 2, grade: 'B' };
-  if (percent < 80) return { points: 3, grade: 'A' };
-  return { points: 4, grade: 'S' };
+  if (percent < 15) return { points: 0, grade: 'F' };
+  if (percent < 25) return { points: 1, grade: 'E' };
+  if (percent < 40) return { points: 3, grade: 'D' };
+  if (percent < 55) return { points: 5, grade: 'C' };
+  if (percent < 65) return { points: 7, grade: 'B' };
+  if (percent < 75) return { points: 10, grade: 'A' };
+  return { points: 20, grade: 'S' };
 }
 
 function listSoundFiles() {
